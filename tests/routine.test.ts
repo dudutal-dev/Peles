@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { appointmentsOn, describeRecurrence, periodKey, routineForDay } from '../src/domain/routine';
-import type { Appointment, RoutineCheck, RoutineItem } from '../src/domain/types';
+import { describeRecurrence, periodKey, routineForDay } from '../src/domain/routine';
+import type { RoutineCheck, RoutineItem } from '../src/domain/types';
 import { TODAY } from './helpers';
 
 function item(id: string, order: number, recurrence: RoutineItem['recurrence']): RoutineItem {
@@ -51,16 +51,5 @@ describe('routine', () => {
     expect(describeRecurrence({ kind: 'days', days: [0, 1, 2, 3, 4, 5, 6] })).toBe('כל יום');
     expect(describeRecurrence({ kind: 'days', days: [4, 0] })).toBe('א׳ ה׳');
     expect(describeRecurrence({ kind: 'weekly' })).toBe('פעם בשבוע');
-  });
-
-  it('lists appointments for a day by time, untimed last', () => {
-    const base = { location: '', createdAt: 0, updatedAt: 0, deletedAt: null, date: TODAY };
-    const appts: Appointment[] = [
-      { ...base, id: 'c', title: 'ללא שעה', time: '' },
-      { ...base, id: 'b', title: 'צהריים', time: '13:00' },
-      { ...base, id: 'a', title: 'בוקר', time: '08:30' },
-      { ...base, id: 'd', title: 'מחר', time: '08:00', date: '2026-09-15' },
-    ];
-    expect(appointmentsOn(appts, TODAY).map((a) => a.id)).toEqual(['a', 'b', 'c']);
   });
 });

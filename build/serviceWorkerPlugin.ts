@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
-import type { Plugin, ResolvedConfig } from 'vite';
+import { join, relative, resolve, sep } from 'node:path';
+import { build, type Plugin, type ResolvedConfig } from 'vite';
+
+const VERSION_PLACEHOLDER = '__SW_VERSION_PLACEHOLDER__';
 
 /**
- * יוצר sw.js אחרי ה-build, עם רשימת כל הקבצים שנבנו (precache).
- * הגרסה נגזרת מתוכן הקבצים, כך שכל שינוי בקוד מייצר עדכון.
- * כך האפליקציה נטענת במלואה גם בלי קליטה, בלי תלות ב-Workbox.
+ * בונה את src/sw/sw.ts לקובץ sw.js עצמאי (IIFE) אחרי ה-build הראשי,
+ * עם רשימת כל הקבצים שנבנו (precache) וגרסה שנגזרת מהתוכן.
  */
 export function serviceWorkerPlugin(): Plugin {
   let config: ResolvedConfig;
@@ -17,16 +18,44 @@ export function serviceWorkerPlugin(): Plugin {
     configResolved(resolved) {
       config = resolved;
     },
-    closeBundle() {
-      const outDir = config.build.outDir;
+    async closeBundle() {
+      const outDir = resolve(config.root, config.build.outDir);
       // ‎.woff ישן נחוץ רק לדפדפנים שלא תומכים ב-woff2 — אין טעם לשמור אותו מראש
       const files = listFiles(outDir).filter((f) => f !== 'sw.js' && !f.endsWith('.map') && !f.endsWith('.woff'));
-      // הגרסה כוללת גם את קוד ה-service worker עצמו, כך ששינוי בו מגיע למכשירים
-      const hash = createHash('sha256').update(swSource('', []));
+      const precache = ['./', ...files];
+
+      const result = await build({
+        configFile: false,
+        root: config.root,
+        logLevel: 'warn',
+        publicDir: false,
+        define: {
+          __PRECACHE__: JSON.stringify(precache),
+          __SW_VERSION__: JSON.stringify(VERSION_PLACEHOLDER),
+        },
+        build: {
+          write: false,
+          emptyOutDir: false,
+          minify: true,
+          lib: {
+            entry: resolve(config.root, 'src/sw/sw.ts'),
+            formats: ['iife'],
+            name: 'palasServiceWorker',
+            fileName: () => 'sw.js',
+          },
+        },
+      });
+
+      const outputs = (Array.isArray(result) ? result : [result]) as Array<{ output?: Array<{ type: string; code?: string }> }>;
+      const chunk = outputs.flatMap((o) => o.output ?? []).find((o) => o.type === 'chunk' && typeof o.code === 'string');
+      if (!chunk?.code) throw new Error('Service worker build produced no code');
+
+      // הגרסה כוללת את קוד ה-worker ואת כל הקבצים, כך שכל שינוי מגיע למכשירים
+      const hash = createHash('sha256').update(chunk.code);
       for (const f of files) hash.update(f).update(readFileSync(join(outDir, f)));
       const version = hash.digest('hex').slice(0, 12);
-      const precache = ['./', ...files];
-      writeFileSync(join(outDir, 'sw.js'), swSource(version, precache));
+
+      writeFileSync(join(outDir, 'sw.js'), chunk.code.replaceAll(VERSION_PLACEHOLDER, version));
     },
   };
 }
@@ -37,48 +66,4 @@ function listFiles(dir: string, root = dir): string[] {
     if (statSync(full).isDirectory()) return listFiles(full, root);
     return [relative(root, full).split(sep).join('/')];
   });
-}
-
-function swSource(version: string, precache: string[]): string {
-  return `/* Generated at build time by build/serviceWorkerPlugin.ts. Do not edit. */
-const CACHE = 'lishka-${version}';
-const PRECACHE = ${JSON.stringify(precache)};
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('lishka-') && k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim()),
-  );
-});
-
-self.addEventListener('message', (event) => {
-  if (event.data === 'SKIP_WAITING') self.skipWaiting();
-});
-
-self.addEventListener('fetch', (event) => {
-  const request = event.request;
-  if (request.method !== 'GET') return;
-  const url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;
-
-  // ignoreVary: module scripts are requested with an Origin header, while the
-  // precached copies were fetched without one; "Vary: Origin" would miss the cache.
-  const options = { ignoreSearch: true, ignoreVary: true };
-
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      caches.match('index.html', options).then((cached) => cached || fetch(request)),
-    );
-    return;
-  }
-
-  event.respondWith(caches.match(request, options).then((cached) => cached || fetch(request)));
-});
-`;
 }

@@ -1,14 +1,14 @@
-import { AtSign, Calendar, CircleCheck, Hash, Highlighter, Mic, X, Zap } from 'lucide-react';
+import { CircleCheck, Highlighter, Mic, Zap } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import { useApp } from '../../app/AppContext';
 import { db } from '../../data/db';
 import { addTask } from '../../data/taskRepo';
-import { parseCapture, type Detected } from '../../domain/capture';
-import { describeDue, formatShortDate } from '../../domain/dates';
+import { parseCapture } from '../../domain/capture';
 import type { TaskStatus } from '../../domain/types';
 import { Segmented } from '../../ui/primitives';
 import { Sheet } from '../../ui/Sheet';
 import { useToast } from '../../ui/Toast';
+import { DetectedChips } from './DetectedChips';
 import { useSpeech } from './useSpeech';
 
 type CaptureStatus = Exclude<TaskStatus, 'done'>;
@@ -19,29 +19,28 @@ const STATUS_OPTIONS = [
   { value: 'verify', label: 'לוודא' },
 ] as const satisfies ReadonlyArray<{ value: CaptureStatus; label: string }>;
 
-const DETECTED_ORDER: Record<Detected['kind'], number> = { due: 0, owner: 1, tag: 2 };
-
 interface CaptureSheetProps {
   open: boolean;
+  initialText: string;
   onClose: () => void;
 }
 
-export function CaptureSheet({ open, onClose }: CaptureSheetProps) {
+export function CaptureSheet({ open, initialText, onClose }: CaptureSheetProps) {
   return (
     <Sheet open={open} onClose={onClose} title="קליטה מהירה">
-      <CaptureForm onClose={onClose} />
+      <CaptureForm initialText={initialText} onClose={onClose} />
     </Sheet>
   );
 }
 
-function CaptureForm({ onClose }: { onClose: () => void }) {
+function CaptureForm({ initialText, onClose }: { initialText: string; onClose: () => void }) {
   const { today, openTask } = useApp();
   const toast = useToast();
   const inputId = useId();
   const hintId = useId();
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText);
   const [ignored, setIgnored] = useState<string[]>([]);
   const [status, setStatus] = useState<CaptureStatus>('todo');
   const [statusTouched, setStatusTouched] = useState(false);
@@ -107,32 +106,6 @@ function CaptureForm({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const detectedLabel = (d: Detected) => {
-    if (d.kind === 'due') {
-      const rel = describeDue(d.value, today);
-      return (
-        <>
-          <Calendar size={15} aria-hidden="true" />
-          {rel.tone === 'later' ? `עד ${rel.text}` : `${rel.text}, ${formatShortDate(d.value, today)}`}
-        </>
-      );
-    }
-    if (d.kind === 'owner') {
-      return (
-        <>
-          <AtSign size={15} aria-hidden="true" />
-          {d.value}
-        </>
-      );
-    }
-    return (
-      <>
-        <Hash size={15} aria-hidden="true" />
-        {d.value}
-      </>
-    );
-  };
-
   return (
     <form
       onSubmit={(e) => {
@@ -188,23 +161,7 @@ function CaptureForm({ onClose }: { onClose: () => void }) {
         </p>
       )}
 
-      {parsed.detected.length > 0 && (
-        <div className="chips capture-detected" aria-label="זוהה בטקסט">
-          {[...parsed.detected].sort((a, b) => DETECTED_ORDER[a.kind] - DETECTED_ORDER[b.kind]).map((d) => (
-            <span key={`${d.kind}-${d.token}`} className="chip chip-detected">
-              {detectedLabel(d)}
-              <button
-                type="button"
-                className="chip-remove"
-                aria-label={`ביטול זיהוי של ${d.token}`}
-                onClick={() => setIgnored((prev) => [...prev, d.token])}
-              >
-                <X size={16} aria-hidden="true" />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
+      <DetectedChips detected={parsed.detected} today={today} onCancel={(token) => setIgnored((prev) => [...prev, token])} />
 
       <p className="capture-hint" id={hintId}>
         אפשר לכתוב <kbd>מחר</kbd>, <kbd>עד יום חמישי</kbd>, <kbd>#תגית</kbd> או <kbd>@שם_גורם</kbd>. את שאר הפרטים אפשר להשלים אחר כך.

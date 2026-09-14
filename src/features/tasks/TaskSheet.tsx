@@ -1,7 +1,22 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Check, Highlighter, Minus, Plus, Trash2, X, Zap } from 'lucide-react';
+import {
+  Building2,
+  CalendarHeart,
+  Check,
+  Folder,
+  Highlighter,
+  Minus,
+  Plus,
+  Trash2,
+  Users,
+  X,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useApp } from '../../app/AppContext';
+import { href, navigateAfterSheet } from '../../app/router';
+import { normalizeName } from '../../domain/contacts';
 import { db } from '../../data/db';
 import { updateTask } from '../../data/taskRepo';
 import { addDays, daysSince, endOfWorkWeek, formatShortDate, startOfNextWeek, toISODate } from '../../domain/dates';
@@ -129,8 +144,88 @@ const CONTEXT_OPTIONS = (['project', 'contact', 'meeting', 'event'] as const).ma
 }));
 const SOURCE_OPTIONS = (['direct', 'self', 'meeting'] as const).map((value) => ({ value, label: SOURCE_LABEL[value] }));
 
+function unique(values: readonly string[]): string[] {
+  const seen = new Set<string>();
+  return values.filter((v) => {
+    const key = normalizeName(v);
+    if (!v.trim() || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function findByName<T extends { deletedAt: number | null }>(list: readonly T[], name: string, getName: (item: T) => string): T | undefined {
+  const key = normalizeName(name);
+  if (!key) return undefined;
+  return list.find((item) => item.deletedAt === null && normalizeName(getName(item)) === key);
+}
+
+interface LinkedEntityProps {
+  icon: LucideIcon;
+  kindLabel: string;
+  title: string;
+  onOpen: () => void;
+  onUnlink?: () => void;
+}
+
+function LinkedEntity({ icon: Icon, kindLabel, title, onOpen, onUnlink }: LinkedEntityProps) {
+  return (
+    <div className="linked-entity">
+      <Icon size={20} aria-hidden="true" />
+      <div className="linked-entity-text">
+        <p className="linked-entity-kind">{kindLabel}</p>
+        <p className="linked-entity-title">{title}</p>
+      </div>
+      <button type="button" className="btn btn-quiet" onClick={onOpen}>
+        פתיחה
+      </button>
+      {onUnlink && (
+        <button type="button" className="icon-btn" aria-label={`ניתוק הקישור ל${title}`} onClick={onUnlink}>
+          <X size={18} aria-hidden="true" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+const CONTEXT_ICONS: Record<ContextKind, LucideIcon> = {
+  project: Folder,
+  contact: Building2,
+  meeting: Users,
+  event: CalendarHeart,
+};
+
 function TaskForm({ task, onSaved, onClose }: { task: Task; onSaved: () => void; onClose: () => void }) {
-  const { today, tasks } = useApp();
+  const { today, tasks, meetings, events, contacts, index } = useApp();
+  const liveMeetings = meetings.filter((m) => m.deletedAt === null);
+  const liveEvents = events.filter((e) => e.deletedAt === null);
+  const liveContacts = contacts.filter((c) => c.deletedAt === null);
+
+  const openEntity = (target: string) => {
+    onClose();
+    navigateAfterSheet(target);
+  };
+
+  const linkedContext = (() => {
+    const ctx = task.context;
+    if (!ctx?.refId) return null;
+    const entity =
+      ctx.kind === 'meeting' ? index.meetings.get(ctx.refId) : ctx.kind === 'event' ? index.events.get(ctx.refId) : ctx.kind === 'contact' ? index.contacts.get(ctx.refId) : undefined;
+    if (!entity || entity.deletedAt !== null) return null;
+    const screen = ctx.kind === 'meeting' ? 'meeting' : ctx.kind === 'event' ? 'event' : 'contact';
+    return {
+      kind: ctx.kind,
+      icon: CONTEXT_ICONS[ctx.kind],
+      title: 'title' in entity ? entity.title : entity.name,
+      href: href(screen, ctx.refId),
+    };
+  })();
+
+  const sourceMeeting = (() => {
+    if (task.source.kind !== 'meeting' || !task.source.refId) return null;
+    const m = index.meetings.get(task.source.refId);
+    return m && m.deletedAt === null ? m : null;
+  })();
   const { remove } = useTaskActions();
   const { patch, flush } = usePatchSaver(task.id, onSaved);
   const ids = {
@@ -158,8 +253,29 @@ function TaskForm({ task, onSaved, onClose }: { task: Task; onSaved: () => void;
 
   const known = knownValues(tasks);
 
+  const contextSuggestions: Record<ContextKind, string[]> = {
+    project: known.contexts.project,
+    contact: unique([...liveContacts.map((c) => c.name), ...known.contexts.contact]),
+    meeting: unique([...liveMeetings.map((m) => m.title), ...known.contexts.meeting]),
+    event: unique([...liveEvents.map((e) => e.title), ...known.contexts.event]),
+  };
+
+  /** שם שתואם ישות שמורה (גורם, ישיבה, אירוע) מקשר אליה אוטומטית. */
   const setContext = (kind: ContextKind, label: string) => {
-    patch({ context: label.trim() ? { kind, label: label.trim(), refId: null } : null }, true);
+    const clean = label.trim();
+    if (!clean) {
+      patch({ context: null }, true);
+      return;
+    }
+    const match =
+      kind === 'contact'
+        ? findByName(liveContacts, clean, (c) => c.name)
+        : kind === 'meeting'
+          ? findByName(liveMeetings, clean, (m) => m.title)
+          : kind === 'event'
+            ? findByName(liveEvents, clean, (e) => e.title)
+            : undefined;
+    patch({ context: { kind, label: clean, refId: match?.id ?? null } }, true);
   };
 
   const addTag = () => {
@@ -238,7 +354,7 @@ function TaskForm({ task, onSaved, onClose }: { task: Task; onSaved: () => void;
               onBlur={() => void flush()}
             />
             <datalist id={ids.ownersList}>
-              {known.owners.map((o) => (
+              {unique([...liveContacts.map((c) => c.name), ...known.owners]).map((o) => (
                 <option key={o} value={o} />
               ))}
             </datalist>
@@ -338,6 +454,19 @@ function TaskForm({ task, onSaved, onClose }: { task: Task; onSaved: () => void;
       </Field>
 
       <Field label="הקשר">
+        {linkedContext ? (
+          <LinkedEntity
+            icon={linkedContext.icon}
+            kindLabel={CONTEXT_LABEL[linkedContext.kind]}
+            title={linkedContext.title}
+            onOpen={() => openEntity(linkedContext.href)}
+            onUnlink={() => {
+              setContextLabel('');
+              patch({ context: null });
+            }}
+          />
+        ) : (
+          <>
         <Segmented<ContextKind>
           label="סוג ההקשר"
           value={contextKind}
@@ -370,21 +499,33 @@ function TaskForm({ task, onSaved, onClose }: { task: Task; onSaved: () => void;
             onBlur={() => void flush()}
           />
           <datalist id={ids.contextList}>
-            {known.contexts[contextKind].map((c) => (
+            {contextSuggestions[contextKind].map((c) => (
               <option key={c} value={c} />
             ))}
           </datalist>
         </div>
+          </>
+        )}
       </Field>
 
       <Field label="מקור">
+        {sourceMeeting && (
+          <LinkedEntity
+            icon={Users}
+            kindLabel="מתוך ישיבה"
+            title={sourceMeeting.title}
+            onOpen={() => openEntity(href('meeting', sourceMeeting.id))}
+          />
+        )}
+        {!sourceMeeting && (
         <Segmented<SourceKind>
           label="מקור"
           value={task.source.kind}
           options={SOURCE_OPTIONS}
           onChange={(kind) => patch({ source: { kind, label: kind === 'meeting' ? sourceLabel.trim() : '', refId: null } })}
         />
-        {task.source.kind === 'meeting' && (
+        )}
+        {!sourceMeeting && task.source.kind === 'meeting' && (
           <div className="input-row">
             <label htmlFor={ids.source} className="visually-hidden">
               איזו ישיבה
@@ -397,12 +538,13 @@ function TaskForm({ task, onSaved, onClose }: { task: Task; onSaved: () => void;
               value={sourceLabel}
               onChange={(e) => {
                 setSourceLabel(e.target.value);
-                patch({ source: { kind: 'meeting', label: e.target.value.trim(), refId: null } }, true);
+                const match = findByName(meetings, e.target.value, (m) => m.title);
+                patch({ source: { kind: 'meeting', label: e.target.value.trim(), refId: match?.id ?? null } }, true);
               }}
               onBlur={() => void flush()}
             />
             <datalist id={ids.sourceList}>
-              {known.meetings.map((m) => (
+              {unique([...liveMeetings.map((m) => m.title), ...known.meetings]).map((m) => (
                 <option key={m} value={m} />
               ))}
             </datalist>

@@ -1,30 +1,75 @@
 import { useEffect, useState } from 'react';
 
-export type Screen = 'morning' | 'waiting' | 'tasks' | 'more';
+export type Screen =
+  | 'morning'
+  | 'waiting'
+  | 'tasks'
+  | 'more'
+  | 'settings'
+  | 'meetings'
+  | 'meeting'
+  | 'events'
+  | 'event'
+  | 'contacts'
+  | 'contact'
+  | 'guide';
+
 export type TasksTab = 'today' | 'overdue' | 'context' | 'all';
 
 export interface Route {
   screen: Screen;
   tab: TasksTab;
+  /** מזהה ישות במסכי פרטים (#/meeting/<id>). */
+  id: string | null;
   params: URLSearchParams;
 }
 
-const SCREENS: readonly Screen[] = ['morning', 'waiting', 'tasks', 'more'];
+const SCREENS: readonly Screen[] = [
+  'morning',
+  'waiting',
+  'tasks',
+  'more',
+  'settings',
+  'meetings',
+  'meeting',
+  'events',
+  'event',
+  'contacts',
+  'contact',
+  'guide',
+];
 const TABS: readonly TasksTab[] = ['today', 'overdue', 'context', 'all'];
 
-/** ניתוב לפי hash: ‎#/tasks/overdue?x=1 — עובד גם בלי שרת ובכל כתובת אחסון. */
+const DETAIL_PARENT: Partial<Record<Screen, Screen>> = {
+  meeting: 'meetings',
+  event: 'events',
+  contact: 'contacts',
+};
+
+/** המסך "העליון" שאליו שייך מסך פרטים; משמש לסימון בסרגל הניווט. */
+export const HUB_SCREENS: readonly Screen[] = ['more', 'settings', 'meetings', 'meeting', 'events', 'event', 'contacts', 'contact', 'guide'];
+
+/** ניתוב לפי hash: ‎#/tasks/overdue?x=1 או ‎#/meeting/<id> — עובד בלי שרת ובכל כתובת אחסון. */
 export function parseHash(hash: string): Route {
   const raw = hash.replace(/^#\/?/, '');
   const [path = '', query = ''] = raw.split('?');
   const [first, second] = path.split('/');
-  const screen = SCREENS.find((s) => s === first) ?? 'morning';
+  let screen = SCREENS.find((s) => s === first) ?? 'morning';
   const tab = TABS.find((t) => t === second) ?? 'today';
-  return { screen, tab, params: new URLSearchParams(query) };
+  let id: string | null = null;
+
+  const parent = DETAIL_PARENT[screen];
+  if (parent) {
+    id = second ? decodeURIComponent(second) : null;
+    if (!id) screen = parent;
+  }
+  return { screen, tab, id, params: new URLSearchParams(query) };
 }
 
-export function href(screen: Screen, tab?: TasksTab, params?: Record<string, string>): string {
+/** @param sub לשונית (במשימות) או מזהה (במסכי פרטים) */
+export function href(screen: Screen, sub?: string, params?: Record<string, string>): string {
   const q = params ? `?${new URLSearchParams(params).toString()}` : '';
-  return `#/${screen}${tab ? `/${tab}` : ''}${q}`;
+  return `#/${screen}${sub ? `/${encodeURIComponent(sub)}` : ''}${q}`;
 }
 
 export function useRoute(): Route {
@@ -42,4 +87,24 @@ export function replaceHash(next: string): void {
   const url = `${window.location.pathname}${window.location.search}${next}`;
   window.history.replaceState(window.history.state, '', url);
   window.dispatchEvent(new HashChangeEvent('hashchange'));
+}
+
+export function navigate(next: string): void {
+  if (window.location.hash !== next) window.location.hash = next;
+}
+
+/**
+ * ניווט אחרי סגירת גיליון. סגירת גיליון מבצעת history.back() אסינכרוני;
+ * ניווט מיידי היה נדרס על ידו וחוזר למסך הקודם.
+ */
+export function navigateAfterSheet(next: string): void {
+  let done = false;
+  const go = () => {
+    if (done) return;
+    done = true;
+    window.removeEventListener('popstate', go);
+    window.setTimeout(() => navigate(next), 0);
+  };
+  window.addEventListener('popstate', go);
+  window.setTimeout(go, 400);
 }

@@ -2,7 +2,7 @@ import { addDays } from '../domain/dates';
 import { WORK_WEEK } from '../domain/labels';
 import { checkId } from '../domain/routine';
 import { newId } from '../domain/task';
-import type { Appointment, ISODate, Recurrence, RoutineItem } from '../domain/types';
+import type { ISODate, Recurrence, RoutineItem } from '../domain/types';
 import type { LishkaDB } from './db';
 
 export async function addRoutineItem(
@@ -69,34 +69,6 @@ export async function setRoutineDone(
     done,
     updatedAt: Date.now(),
   });
-}
-
-export async function addAppointment(
-  db: LishkaDB,
-  input: { title: string; date: ISODate; time: string; location?: string },
-): Promise<Appointment> {
-  const now = Date.now();
-  const appt: Appointment = {
-    id: newId(),
-    title: input.title.trim(),
-    date: input.date,
-    time: input.time,
-    location: input.location?.trim() ?? '',
-    createdAt: now,
-    updatedAt: now,
-    deletedAt: null,
-  };
-  await db.appointments.add(appt);
-  return appt;
-}
-
-export async function deleteAppointment(db: LishkaDB, id: string): Promise<void> {
-  const now = Date.now();
-  await db.appointments.update(id, { deletedAt: now, updatedAt: now });
-}
-
-export async function restoreAppointment(db: LishkaDB, id: string): Promise<void> {
-  await db.appointments.update(id, { deletedAt: null, updatedAt: Date.now() });
 }
 
 /** מנקה סימוני שגרה ישנים (מעל 60 יום) כדי שהמסד לא יגדל לנצח. */

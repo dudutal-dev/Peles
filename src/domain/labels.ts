@@ -1,4 +1,62 @@
-import type { ContextKind, OwnerKind, SourceKind, TaskStatus, Weekday } from './types';
+import type {
+  BudgetModel,
+  ContactType,
+  ContextKind,
+  EventStatus,
+  EventType,
+  OwnerKind,
+  SourceKind,
+  TaskStatus,
+  VenueKind,
+  Weekday,
+} from './types';
+
+export const CONTACT_TYPE_LABEL: Record<ContactType, string> = {
+  contractor: 'קבלן',
+  district: 'מחוז',
+  consultant: 'יועץ',
+  internal: 'גורם פנימי',
+  other: 'אחר',
+};
+
+export const CONTACT_TYPE_SHORT_LABEL: Record<ContactType, string> = {
+  contractor: 'קבלן',
+  district: 'מחוז',
+  consultant: 'יועץ',
+  internal: 'פנימי',
+  other: 'אחר',
+};
+
+export const EVENT_TYPE_LABEL: Record<EventType, string> = {
+  farewell: 'אירוע פרידה',
+  retirement: 'אירוע פרישה',
+  conference: 'כנס / יום עיון',
+  teamBuilding: 'יום גיבוש',
+  funDay: 'יום כיף',
+  teamEvening: 'ערב צוות',
+  recognition: 'אירוע הוקרה',
+  onboarding: 'כניסה לתפקיד',
+  other: 'אחר',
+};
+
+export const BUDGET_MODEL_LABEL: Record<BudgetModel, string> = {
+  none: 'ללא',
+  perHead: 'לראש',
+  lumpSum: 'סכום כולל',
+  combined: 'משולב',
+};
+
+export const VENUE_LABEL: Record<VenueKind, string> = {
+  undecided: 'טרם הוחלט',
+  internal: 'פנימי',
+  external: 'חיצוני',
+};
+
+export const EVENT_STATUS_LABEL: Record<EventStatus, string> = {
+  planning: 'בתכנון',
+  done: 'התקיים',
+  cancelled: 'בוטל',
+};
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
   todo: 'לביצוע',

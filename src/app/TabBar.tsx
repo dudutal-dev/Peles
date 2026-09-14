@@ -1,5 +1,5 @@
-import { Hourglass, ListChecks, Plus, Settings2, Sunrise } from 'lucide-react';
-import { href, type Route } from './router';
+import { Hourglass, LayoutGrid, ListChecks, Plus, Sunrise } from 'lucide-react';
+import { HUB_SCREENS, href, type Route } from './router';
 import type { Snapshot } from '../domain/views';
 
 interface TabBarProps {
@@ -9,16 +9,16 @@ interface TabBarProps {
 }
 
 export function TabBar({ route, snap, onCapture }: TabBarProps) {
-  const current = (screen: Route['screen']) => (route.screen === screen ? 'page' : undefined);
+  const current = (active: boolean) => (active ? 'page' : undefined);
 
   return (
     <nav className="tabbar" aria-label="ניווט ראשי">
       <div className="tabbar-inner">
-        <a className="tab" href={href('morning')} aria-current={current('morning')}>
+        <a className="tab" href={href('morning')} aria-current={current(route.screen === 'morning')}>
           <Sunrise size={24} aria-hidden="true" />
           <span>בוקר</span>
         </a>
-        <a className="tab" href={href('waiting')} aria-current={current('waiting')}>
+        <a className="tab" href={href('waiting')} aria-current={current(route.screen === 'waiting')}>
           <Hourglass size={24} aria-hidden="true" />
           <span>ממתין</span>
           {snap && snap.nudges > 0 && (
@@ -33,7 +33,11 @@ export function TabBar({ route, snap, onCapture }: TabBarProps) {
           </span>
           <span aria-hidden="true">משימה</span>
         </button>
-        <a className="tab" href={href('tasks', route.screen === 'tasks' ? route.tab : 'today')} aria-current={current('tasks')}>
+        <a
+          className="tab"
+          href={href('tasks', route.screen === 'tasks' ? route.tab : 'today')}
+          aria-current={current(route.screen === 'tasks')}
+        >
           <ListChecks size={24} aria-hidden="true" />
           <span>משימות</span>
           {snap && snap.overdue > 0 && (
@@ -42,8 +46,8 @@ export function TabBar({ route, snap, onCapture }: TabBarProps) {
             </span>
           )}
         </a>
-        <a className="tab" href={href('more')} aria-current={current('more')}>
-          <Settings2 size={24} aria-hidden="true" />
+        <a className="tab" href={href('more')} aria-current={current(HUB_SCREENS.includes(route.screen))}>
+          <LayoutGrid size={24} aria-hidden="true" />
           <span>עוד</span>
         </a>
       </div>

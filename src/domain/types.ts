@@ -94,13 +94,80 @@ export interface RoutineCheck {
   updatedAt: Timestamp;
 }
 
-export interface Appointment {
+/**
+ * ישיבה או פגישה ביומן הפנימי. בשלב א' זה היה "Appointment" (שעה ונושא בלבד);
+ * בשלב ב' אותה רשומה מתעדת גם משתתפים, הערות והתחייבויות.
+ */
+export interface Meeting {
   id: string;
   title: string;
   date: ISODate;
   /** HH:MM, או ריק לפגישה בלי שעה. */
   time: string;
   location: string;
+  participants: string[];
+  notes: string;
+  /** מתי הישיבה סוכמה ונסגרה. */
+  closedAt: Timestamp | null;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  deletedAt: Timestamp | null;
+}
+
+export type ContactType = 'contractor' | 'district' | 'consultant' | 'internal' | 'other';
+
+/** גורם חוזר: לא CRM, רק ריכוז קל של פרטים. המשימות מולו נגזרות, לא נשמרות כאן. */
+export interface Contact {
+  id: string;
+  name: string;
+  type: ContactType;
+  role: string;
+  phone: string;
+  email: string;
+  notes: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  deletedAt: Timestamp | null;
+}
+
+export type EventType =
+  | 'farewell'
+  | 'retirement'
+  | 'conference'
+  | 'teamBuilding'
+  | 'funDay'
+  | 'teamEvening'
+  | 'recognition'
+  | 'onboarding'
+  | 'other';
+
+export type BudgetModel = 'none' | 'perHead' | 'lumpSum' | 'combined';
+
+export interface EventBudget {
+  model: BudgetModel;
+  /** מודל "לראש": סכום לכל משתתף. */
+  perHead: number | null;
+  /** מודל "כולל": סכום אחד לכל האירוע. */
+  total: number | null;
+  /** מודל "משולב": חלק הארגון והשתתפות עצמית, לראש. */
+  orgShare: number | null;
+  selfShare: number | null;
+}
+
+export type VenueKind = 'undecided' | 'internal' | 'external';
+export type EventStatus = 'planning' | 'done' | 'cancelled';
+
+/** אירוע ארגוני. פריטי ה-checklist הם משימות רגילות עם context.kind === 'event'. */
+export interface OrgEvent {
+  id: string;
+  title: string;
+  type: EventType;
+  targetDate: ISODate | null;
+  expectedAttendees: number | null;
+  budget: EventBudget;
+  venue: VenueKind;
+  status: EventStatus;
+  notes: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   deletedAt: Timestamp | null;

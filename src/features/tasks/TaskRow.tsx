@@ -18,6 +18,7 @@ import {
 import { useState, type ReactNode } from 'react';
 import { useApp } from '../../app/AppContext';
 import { describeDue, formatShortDate, toISODate } from '../../domain/dates';
+import { contextLabel } from '../../domain/entities';
 import { daysPhrase } from '../../domain/labels';
 import type { ContextKind, Task } from '../../domain/types';
 import { daysWaiting, needsNudge } from '../../domain/views';
@@ -46,7 +47,7 @@ function ownerText(task: Task): string {
 }
 
 export function TaskRow({ task, variant = 'default', hideOwner = false, hideContext = false }: TaskRowProps) {
-  const { today, openTask } = useApp();
+  const { today, openTask, index } = useApp();
   const { complete, reopen } = useTaskActions();
   const [completing, setCompleting] = useState(false);
 
@@ -128,14 +129,27 @@ export function TaskRow({ task, variant = 'default', hideOwner = false, hideCont
     );
   }
 
-  if (!hideContext && task.context && task.context.label.trim()) {
+  const ctxLabel = contextLabel(task, index);
+  if (!hideContext && task.context && ctxLabel) {
     const Icon = CONTEXT_ICON[task.context.kind];
     meta.push(
       <span key="ctx" className="meta">
         <Icon size={ICON} aria-hidden="true" />
-        {task.context.label}
+        {ctxLabel}
       </span>,
     );
+  } else if (!hideContext && !task.context && task.source.kind === 'meeting') {
+    // בלי הקשר אחר: מציגים מאיזו ישיבה המשימה הגיעה
+    const meeting = task.source.refId ? index.meetings.get(task.source.refId) : undefined;
+    const label = meeting && meeting.deletedAt === null ? meeting.title : task.source.label.trim();
+    if (label) {
+      meta.push(
+        <span key="src" className="meta">
+          <Users size={ICON} aria-hidden="true" />
+          {label}
+        </span>,
+      );
+    }
   }
 
   for (const tag of task.tags) {

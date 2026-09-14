@@ -1,0 +1,20 @@
+{
+  "name": "palas-push",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Web Push scheduling server for פלס (Cloudflare Worker + D1). Stores only wake-up times, never task content.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "setup-vapid": "node scripts/setup-vapid.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260914.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0",
+    "wrangler": "^4.131.2"
+  }
+}

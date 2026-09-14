@@ -91,7 +91,7 @@ export function TasksScreen({ route }: { route: Route }) {
       {searching ? (
         <SearchResults tasks={searchTasks(scoped, query)} query={query} />
       ) : route.tab === 'today' ? (
-        <TodayTab tasks={todayView(scoped, today)} onCapture={openCapture} />
+        <TodayTab tasks={todayView(scoped, today)} onCapture={() => openCapture()} />
       ) : route.tab === 'overdue' ? (
         <SimpleTab
           tasks={overdueView(scoped, today)}
