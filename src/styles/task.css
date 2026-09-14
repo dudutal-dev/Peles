@@ -1,0 +1,438 @@
+/* ——— שורת משימה ——— */
+.task-row {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface);
+  transition: opacity 260ms var(--ease-out);
+}
+
+.task-row[data-completing='true'] {
+  opacity: 0.55;
+}
+
+.task-check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  min-height: 56px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  padding-inline-start: 4px;
+}
+
+.check-ring {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--rule-strong);
+  color: transparent;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    border-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out);
+}
+
+.task-check[data-status='waiting'] .check-ring,
+.task-check[data-status='verify'] .check-ring {
+  border-style: dashed;
+  border-color: var(--ink-3);
+}
+
+.task-check[data-overdue='true'] .check-ring {
+  border-color: var(--danger);
+}
+
+.task-check:hover .check-ring {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.task-check[aria-pressed='true'] .check-ring {
+  background: var(--success);
+  border-color: var(--success);
+  border-style: solid;
+  color: #fff;
+}
+
+.task-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding-block: 12px;
+  padding-inline: 2px 14px;
+  border: 0;
+  background: transparent;
+  text-align: start;
+}
+
+.task-main:active {
+  background: var(--surface-sunk);
+}
+
+.task-title {
+  font-size: var(--fs-row);
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.task-row[data-urgent='true'] .task-title {
+  font-weight: 650;
+}
+
+.task-row[data-completing='true'] .task-title {
+  text-decoration: line-through;
+}
+
+/* טוש צהוב: ראש המינהל מחכה */
+.hl {
+  background-image: linear-gradient(
+    to top,
+    transparent 0.12em,
+    var(--highlight) 0.12em,
+    var(--highlight) 0.78em,
+    transparent 0.78em
+  );
+  padding-inline: 0.18em;
+  margin-inline: -0.18em;
+  border-radius: 0.15em 0.45em 0.2em 0.5em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  color: var(--ink-2);
+  font-size: var(--fs-meta);
+  line-height: 1.45;
+}
+
+.meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.meta svg {
+  flex: none;
+}
+
+.meta-overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.meta-today {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.meta-director {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.meta-urgent {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.meta-nudge {
+  color: var(--nudge);
+  background: var(--nudge-soft);
+  padding-inline: 6px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.meta-tag {
+  color: var(--brand-strong);
+}
+
+.meta-done {
+  color: var(--success);
+}
+
+/* כמה זמן תקוע */
+.stuck {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  padding-inline: 8px 12px;
+  color: var(--ink-2);
+  text-align: center;
+  line-height: 1.1;
+}
+
+.stuck b {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.stuck small {
+  font-size: 0.75rem;
+}
+
+.stuck[data-level='long'] b {
+  color: var(--nudge);
+}
+
+.stuck[data-level='very-long'] b {
+  color: var(--danger);
+}
+
+/* ——— קבוצה ——— */
+.group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 16px 8px;
+  background: var(--surface-sunk);
+}
+
+.group-title {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.group-sub {
+  color: var(--ink-2);
+  font-size: var(--fs-meta);
+}
+
+.group-count {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0 10px;
+  margin-inline-start: auto;
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-size: var(--fs-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.group-overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ——— שגרה ——— */
+.routine-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 52px;
+  width: 100%;
+  border: 0;
+  background: var(--surface);
+  text-align: start;
+  padding-inline: 4px 14px;
+}
+
+.routine-row .check-ring {
+  border-radius: 7px;
+}
+
+.routine-row[aria-checked='true'] .check-ring {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+
+.routine-row[aria-checked='true'] .routine-title {
+  color: var(--ink-2);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-3);
+}
+
+.routine-box {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  flex: none;
+}
+
+.routine-title {
+  flex: 1;
+  font-size: var(--fs-body);
+}
+
+.routine-freq {
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+  color: var(--ink-2);
+  font-size: var(--fs-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-track {
+  width: 64px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-sunk);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--brand);
+  border-radius: 3px;
+  transition: width var(--dur) var(--ease-out);
+}
+
+/* ——— פגישות ——— */
+.appt-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding-inline: 16px 4px;
+}
+
+.appt-time {
+  flex: none;
+  width: 48px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.appt-time[data-empty='true'] {
+  color: var(--ink-3);
+  font-weight: 400;
+  font-size: var(--fs-meta);
+}
+
+.appt-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.appt-title {
+  font-weight: 500;
+}
+
+.appt-loc {
+  color: var(--ink-2);
+  font-size: var(--fs-meta);
+}
+
+.appt-row[data-past='true'] .appt-time,
+.appt-row[data-past='true'] .appt-title {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+
+/* ——— כותרת בוקר ——— */
+.brand-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand-strong);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  margin-block-end: 18px;
+}
+
+.greeting {
+  font-size: var(--fs-display);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.today-date {
+  color: var(--ink-2);
+  font-size: 1.0625rem;
+  margin-block-start: 2px;
+}
+
+.pulse {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 16px;
+}
+
+.pulse-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding-inline: 12px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.pulse-item b {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pulse-item[data-tone='overdue'] {
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.pulse-item[data-tone='nudge'] {
+  border-color: color-mix(in srgb, var(--nudge) 35%, transparent);
+  background: var(--nudge-soft);
+  color: var(--nudge);
+}
+
+.pulse-calm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--success);
+  font-weight: 500;
+  min-height: 44px;
+}
+
+.done-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  width: 100%;
+  padding-inline: 16px 8px;
+  border: 0;
+  background: var(--surface);
+  color: var(--success);
+  font-weight: 500;
+  text-align: start;
+}
+
+.done-summary span {
+  flex: 1;
+}

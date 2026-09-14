@@ -1,0 +1,88 @@
+/*
+ * פלס — אסימוני עיצוב
+ * נייר מינרלי קריר, דיו גרפיט, כחול-פטרול לפעולות.
+ * הדגשת "ראש המינהל מחכה" בטוש צהוב היא האלמנט הבולט היחיד.
+ */
+:root {
+  --paper: #f1f3f2;
+  --surface: #ffffff;
+  --surface-sunk: #e6eae9;
+  --ink: #1a2327;
+  --ink-2: #536167;
+  --ink-3: #7d898e;
+  --rule: #d8dedd;
+  --rule-strong: #b9c3c3;
+
+  --brand: #0e5e6f;
+  --brand-strong: #0a4856;
+  --brand-ink: #ffffff;
+  --brand-soft: #ddebee;
+
+  --highlight: #ffe45c;
+  --danger: #b3261e;
+  --danger-soft: #fbe9e7;
+  --nudge: #8a5300;
+  --nudge-soft: #fdefd3;
+  --success: #1d7348;
+  --success-soft: #e2f2e8;
+
+  --scrim: rgba(16, 24, 28, 0.5);
+  --shadow-sheet: 0 -10px 36px rgba(16, 24, 28, 0.18);
+  --shadow-float: 0 6px 16px rgba(14, 94, 111, 0.32);
+
+  --radius-panel: 14px;
+  --radius-control: 10px;
+  --radius-sheet: 20px;
+  --radius-pill: 999px;
+
+  --font: 'IBM Plex Sans Hebrew', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --fs-meta: 0.875rem;
+  --fs-body: 1rem;
+  --fs-row: 1.0625rem;
+  --fs-section: 1.125rem;
+  --fs-title: 1.625rem;
+  --fs-display: 2rem;
+
+  --nav-h: 68px;
+  --kb: 0px;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur: 200ms;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0f1719;
+    --surface: #172225;
+    --surface-sunk: #1f2c30;
+    --ink: #e6ecec;
+    --ink-2: #a5b2b5;
+    --ink-3: #728084;
+    --rule: #263539;
+    --rule-strong: #37494e;
+
+    --brand: #5fb3c4;
+    --brand-strong: #86c9d6;
+    --brand-ink: #062a31;
+    --brand-soft: #173a42;
+
+    --highlight: rgba(255, 219, 77, 0.3);
+    --danger: #ff8a80;
+    --danger-soft: #3a1d1b;
+    --nudge: #f2b64c;
+    --nudge-soft: #33280f;
+    --success: #6fcf97;
+    --success-soft: #13301f;
+
+    --scrim: rgba(0, 0, 0, 0.62);
+    --shadow-sheet: 0 -10px 36px rgba(0, 0, 0, 0.5);
+    --shadow-float: 0 6px 16px rgba(0, 0, 0, 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur: 0ms;
+  }
+}
